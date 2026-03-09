@@ -5,6 +5,29 @@ import {
 
 const STATUS_COLORS = { sent: '#10b981', failed: '#ef4444', skipped: '#9ca3af' };
 
+function CleanTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const item  = payload[0];
+  const name  = label ?? item.name ?? item.payload?.status ?? item.payload?.pipeline ?? item.payload?.reason ?? '';
+  const value = item.value;
+  return (
+    <div style={{
+      background: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: 6,
+      padding: '6px 12px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      fontSize: 12,
+      color: '#111827',
+      lineHeight: 1.6,
+      pointerEvents: 'none',
+    }}>
+      {name && <p style={{ color: '#6b7280', marginBottom: 2, textTransform: 'capitalize' }}>{name}</p>}
+      <p style={{ fontWeight: 600, color: '#111827' }}>{value.toLocaleString()}</p>
+    </div>
+  );
+}
+
 function ChartCard({ title, subtitle, children }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5">
@@ -39,7 +62,7 @@ export function StatusChart({ data }) {
                 <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? '#6b7280'} />
               ))}
             </Pie>
-            <Tooltip formatter={(v, n) => [v, n]} />
+            <Tooltip content={<CleanTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       )}
@@ -55,7 +78,7 @@ export function PipelineChart({ data }) {
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
           <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="pipeline" tick={{ fontSize: 11 }} width={80} axisLine={false} tickLine={false} />
-          <Tooltip />
+          <Tooltip content={<CleanTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
           <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={16} />
         </BarChart>
       </ResponsiveContainer>
@@ -74,7 +97,7 @@ export function FailureChart({ data }) {
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
             <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="reason" tick={{ fontSize: 11 }} width={140} axisLine={false} tickLine={false} />
-            <Tooltip />
+            <Tooltip content={<CleanTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
             <Bar dataKey="count" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={16} />
           </BarChart>
         </ResponsiveContainer>

@@ -1,26 +1,36 @@
 import { useState, useEffect } from 'react';
-import KpiCard     from './KpiCard';
-import DateNav     from './DateNav';
+import KpiCard         from './KpiCard';
+import DateRangePicker from './DateRangePicker';
 import { StatusChart, PipelineChart, FailureChart } from './Charts';
-import UserTable   from './UserTable';
-import UserDetail  from './UserDetail';
-import { getDateWindow, fmtDate } from '../utils/dates';
+import UserTable       from './UserTable';
+import UserDetail      from './UserDetail';
+import { toISO } from '../utils/dates';
 import {
   fetchKPIs, fetchStatusChart, fetchPipelineChart,
   fetchFailureChart, fetchUsers,
 } from '../api';
 
-export default function Dashboard() {
-  const [weekOffset,     setWeekOffset]     = useState(0);
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [kpis,       setKpis]       = useState(null);
-  const [statusData, setStatusData] = useState([]);
-  const [pipeData,   setPipeData]   = useState([]);
-  const [failData,   setFailData]   = useState([]);
-  const [users,      setUsers]      = useState([]);
-  const [loading,    setLoading]    = useState(true);
+function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return toISO(d); }
 
-  const { start, end } = getDateWindow(weekOffset);
+function getRangeLabel(start, end) {
+  const today = toISO(new Date());
+  if (start === end && start === today) return 'Today';
+  const days = Math.round((new Date(end) - new Date(start)) / 86400000) + 1;
+  if (days === 7)  return '7D';
+  if (days === 30) return '30D';
+  return `${days}D`;
+}
+
+export default function Dashboard() {
+  const [start,         setStart]         = useState(() => daysAgo(6));
+  const [end,           setEnd]           = useState(() => toISO(new Date()));
+  const [selectedUserId,setSelectedUserId] = useState(null);
+  const [kpis,          setKpis]          = useState(null);
+  const [statusData,    setStatusData]    = useState([]);
+  const [pipeData,      setPipeData]      = useState([]);
+  const [failData,      setFailData]      = useState([]);
+  const [users,         setUsers]         = useState([]);
+  const [loading,       setLoading]       = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -37,13 +47,14 @@ export default function Dashboard() {
       setFailData(fail);
       setUsers(users);
     }).finally(() => setLoading(false));
-  }, [weekOffset]);
+  }, [start, end]);
 
+  const rangeLabel = getRangeLabel(start, end);
   const kpiCards = kpis ? [
-    { label: 'Total Users',          value: kpis.totalUsers,      accent: '#6366f1' },
-    { label: 'Scheduled Today',      value: kpis.scheduledToday,  accent: '#0ea5e9' },
-    { label: 'Success Rate (7D)',     value: kpis.successRate != null ? `${kpis.successRate}%` : 'N/A', accent: '#10b981' },
-    { label: 'Failed Messages (7D)', value: kpis.failedMessages,  accent: '#ef4444' },
+    { label: 'Total Users',                        value: kpis.totalUsers,             accent: '#6366f1' },
+    { label: 'Scheduled Today',                    value: kpis.scheduledToday,         accent: '#0ea5e9' },
+    { label: `Success Rate (${rangeLabel})`,       value: `${kpis.successRate}%`,      accent: '#10b981' },
+    { label: `Failed Messages (${rangeLabel})`,    value: kpis.failedMessages,         accent: '#ef4444' },
   ] : [];
 
   return (
@@ -54,12 +65,11 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900 leading-tight">PHR Intelligence Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">Personalized Home Recommendation · Live Monitor</p>
         </div>
-        <div className="text-right">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Date Window</p>
-          <span className="text-sm font-semibold text-gray-700 bg-gray-100 border border-gray-200 rounded-md px-3 py-1 inline-block">
-            {fmtDate(start)} – {fmtDate(end)}
-          </span>
-        </div>
+        <DateRangePicker
+          start={start}
+          end={end}
+          onChange={(s, e) => { setStart(s); setEnd(e); }}
+        />
       </div>
 
       {/* KPI Cards */}
@@ -70,17 +80,6 @@ export default function Dashboard() {
             ))
           : kpiCards.map(c => <KpiCard key={c.label} {...c} />)
         }
-      </div>
-
-      {/* Date navigation */}
-      <div className="mb-5">
-        <DateNav
-          startDate={start}
-          endDate={end}
-          weekOffset={weekOffset}
-          onPrev={() => setWeekOffset(w => w + 1)}
-          onNext={() => setWeekOffset(w => w - 1)}
-        />
       </div>
 
       {/* Charts */}
