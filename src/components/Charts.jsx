@@ -1,0 +1,84 @@
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+} from 'recharts';
+
+const STATUS_COLORS = { sent: '#10b981', failed: '#ef4444', skipped: '#9ca3af' };
+
+function ChartCard({ title, subtitle, children }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-5">
+      <p className="text-sm font-semibold text-gray-900 mb-0.5">{title}</p>
+      <p className="text-xs text-gray-400 mb-4">{subtitle}</p>
+      {children}
+    </div>
+  );
+}
+
+export function StatusChart({ data }) {
+  return (
+    <ChartCard title="Message Status" subtitle="Last 7 days delivery performance">
+      {data.length === 0 ? (
+        <p className="text-sm text-gray-400 py-8 text-center">No activity in this date range</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="count"
+              nameKey="status"
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={90}
+              paddingAngle={2}
+              label={({ status, percent }) => `${status} ${(percent * 100).toFixed(0)}%`}
+              labelLine={false}
+            >
+              {data.map((entry) => (
+                <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? '#6b7280'} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(v, n) => [v, n]} />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </ChartCard>
+  );
+}
+
+export function PipelineChart({ data }) {
+  return (
+    <ChartCard title="Users by Pipeline" subtitle="Lead segmentation overview">
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+          <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="pipeline" tick={{ fontSize: 11 }} width={80} axisLine={false} tickLine={false} />
+          <Tooltip />
+          <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={16} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+export function FailureChart({ data }) {
+  return (
+    <ChartCard title="Failure Reasons" subtitle="Message delivery issues">
+      {data.length === 0 ? (
+        <p className="text-sm text-gray-400 py-8 text-center">No failures in this date range</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+            <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="reason" tick={{ fontSize: 11 }} width={140} axisLine={false} tickLine={false} />
+            <Tooltip />
+            <Bar dataKey="count" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </ChartCard>
+  );
+}
