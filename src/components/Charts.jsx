@@ -40,18 +40,27 @@ function EmptyState({ message }) {
   );
 }
 
+const INSIGHT_META = {
+  performance:    { icon: '🟢', className: 'text-gray-600' },
+  anomaly:        { icon: '⚠',  className: 'text-amber-600' },
+  recommendation: { icon: '💡', className: 'text-gray-600' },
+};
+
 function Insights({ points }) {
   if (!points?.length) return null;
   return (
     <div className="mt-4 pt-3 border-t border-gray-100">
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Insights</p>
-      <ul className="space-y-1.5">
-        {points.map((p, i) => (
-          <li key={i} className="flex gap-1.5 text-xs text-gray-500 leading-relaxed">
-            <span className="text-gray-300 shrink-0 mt-px">›</span>
-            <span>{p}</span>
-          </li>
-        ))}
+      <ul className="space-y-2">
+        {points.map((p, i) => {
+          const meta = INSIGHT_META[p.type] ?? { icon: '›', className: 'text-gray-500' };
+          return (
+            <li key={i} className="flex gap-2 text-xs leading-relaxed">
+              <span className="shrink-0">{meta.icon}</span>
+              <span className={meta.className}>{p.text}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -70,45 +79,62 @@ function ChartCard({ title, subtitle, children }) {
 // ── Insight generators ────────────────────────────────────────────────────────
 
 function statusInsights(data) {
-  const total   = data.reduce((s, r) => s + r.count, 0);
+  const total     = data.reduce((s, r) => s + r.count, 0);
   if (!total) return [];
-  const sent    = data.find(r => r.status === 'sent')?.count    ?? 0;
-  const failed  = data.find(r => r.status === 'failed')?.count  ?? 0;
-  const skipped = data.find(r => r.status === 'skipped')?.count ?? 0;
-  const sentPct   = Math.round((sent   / total) * 100);
-  const failedPct = Math.round((failed / total) * 100);
-  const points = [];
+  const sent      = data.find(r => r.status === 'sent')?.count    ?? 0;
+  const failed    = data.find(r => r.status === 'failed')?.count  ?? 0;
+  const skipped   = data.find(r => r.status === 'skipped')?.count ?? 0;
+  const sentPct   = Math.round((sent    / total) * 100);
+  const failedPct = Math.round((failed  / total) * 100);
+  const skippedPct= Math.round((skipped / total) * 100);
 
-  if (sentPct >= 80)      points.push(`Strong delivery — ${sentPct}% of messages sent successfully.`);
-  else if (sentPct >= 50) points.push(`Moderate delivery rate at ${sentPct}%. Room for improvement.`);
-  else                    points.push(`Low delivery rate — only ${sentPct}% sent. Review failure reasons.`);
+  const perf = sentPct >= 85
+    ? { type: 'performance', text: 'Delivery performance is healthy — messages are consistently reaching recipients.' }
+    : sentPct >= 60
+    ? { type: 'performance', text: 'Delivery performance is moderate — a notable portion of messages are not getting through.' }
+    : { type: 'performance', text: 'Delivery performance is poor — the majority of outreach is not reaching users.' };
 
-  if (failedPct >= 20)    points.push(`High failure rate at ${failedPct}% — delivery issues need attention.`);
-  else if (failed > 0)    points.push(`${failed} message${failed > 1 ? 's' : ''} failed (${failedPct}% of total).`);
+  const anomaly = failedPct >= 30
+    ? { type: 'anomaly', text: 'Failure rate is critically high, suggesting a systemic issue rather than isolated incidents.' }
+    : skippedPct >= 20
+    ? { type: 'anomaly', text: 'A large share of messages were skipped — users may have eligibility gaps or opt-out conditions.' }
+    : { type: 'anomaly', text: 'No severe anomalies detected, but continued monitoring will help catch early degradation.' };
 
-  if (skipped > 0)        points.push(`${skipped} message${skipped > 1 ? 's' : ''} skipped this period.`);
+  const rec = failedPct >= 20
+    ? { type: 'recommendation', text: 'Investigate failure reasons and retry eligible messages to recover lost delivery opportunities.' }
+    : skippedPct >= 20
+    ? { type: 'recommendation', text: 'Audit user eligibility criteria and opt-in status to reduce unnecessary skips.' }
+    : { type: 'recommendation', text: 'Maintain current delivery practices and set alerts for any sudden drop in success rate.' };
 
-  return points;
+  return [perf, anomaly, rec];
 }
 
 function pipelineInsights(data) {
   if (!data.length) return [];
   const total  = data.reduce((s, r) => s + r.count, 0);
   const top    = data[0];
+  const bottom = data[data.length - 1];
   const topPct = Math.round((top.count / total) * 100);
-  const points = [];
 
-  points.push(`"${top.pipeline}" leads with ${top.count} users (${topPct}% of total).`);
+  const perf = data.length === 1
+    ? { type: 'performance', text: 'All users belong to a single pipeline — segmentation is uniform but leaves no room for targeted variation.' }
+    : topPct <= 50
+    ? { type: 'performance', text: 'User distribution across pipelines is balanced — outreach risk is spread evenly across segments.' }
+    : { type: 'performance', text: 'Pipeline coverage is uneven — one segment drives most activity while others contribute little.' };
 
-  if (data.length > 1) {
-    const second = data[1];
-    const gap    = top.count - second.count;
-    points.push(`"${second.pipeline}" is second with ${second.count} users — ${gap} behind the top segment.`);
-  }
+  const anomaly = topPct >= 70
+    ? { type: 'anomaly', text: 'Heavy concentration in one pipeline creates dependency risk — a drop in that segment will impact overall metrics.' }
+    : data.length > 2 && bottom.count < total * 0.05
+    ? { type: 'anomaly', text: 'Some pipelines have very low user counts — they may be stale, miscategorized, or inactive.' }
+    : { type: 'anomaly', text: 'Pipeline distribution appears within normal range — no unusual concentration detected.' };
 
-  if (topPct >= 60) points.push(`Heavy concentration in one segment — consider diversifying pipeline coverage.`);
+  const rec = topPct >= 70
+    ? { type: 'recommendation', text: 'Expand outreach into underrepresented pipelines to reduce over-reliance on a single segment.' }
+    : data.length > 2 && bottom.count < total * 0.05
+    ? { type: 'recommendation', text: 'Review low-volume pipelines and consider consolidating or re-activating them with targeted campaigns.' }
+    : { type: 'recommendation', text: 'Keep pipeline segments current as leads progress to ensure messaging stays relevant and well-targeted.' };
 
-  return points.slice(0, 2);
+  return [perf, anomaly, rec];
 }
 
 function failureInsights(data) {
@@ -116,14 +142,20 @@ function failureInsights(data) {
   const total  = data.reduce((s, r) => s + r.count, 0);
   const top    = data[0];
   const topPct = Math.round((top.count / total) * 100);
-  const points = [];
 
-  points.push(`Top failure: "${top.reason}" — ${top.count} occurrences (${topPct}% of failures).`);
+  const perf = data.length === 1
+    ? { type: 'performance', text: 'All failures share a single root cause — this is easier to resolve than scattered multi-cause failures.' }
+    : { type: 'performance', text: `Failures are distributed across ${data.length} reasons — delivery issues appear to be multi-faceted and may require multiple fixes.` };
 
-  if (topPct >= 70) points.push(`Resolving this single issue could fix most delivery failures.`);
-  else if (data.length > 1) points.push(`${data.length} distinct failure reasons detected this period.`);
+  const anomaly = topPct >= 70
+    ? { type: 'anomaly', text: 'One failure reason is responsible for most delivery issues — this concentrated pattern indicates a specific, fixable problem.' }
+    : { type: 'anomaly', text: 'No single failure reason dominates — issues may stem from varied user conditions or inconsistent system behaviour.' };
 
-  return points;
+  const rec = topPct >= 70
+    ? { type: 'recommendation', text: `Prioritise the top failure reason — resolving it alone is likely to produce the most significant improvement in delivery rate.` }
+    : { type: 'recommendation', text: 'Work through failure reasons by frequency — tackling the highest-volume issues first will yield the fastest recovery.' };
+
+  return [perf, anomaly, rec];
 }
 
 // ── Charts ────────────────────────────────────────────────────────────────────
