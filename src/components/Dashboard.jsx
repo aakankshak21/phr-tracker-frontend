@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import KpiCard         from './KpiCard';
 import DateRangePicker from './DateRangePicker';
 import { StatusChart, PipelineChart, FailureChart } from './Charts';
+import InsightsPanel   from './InsightsPanel';
 import UserTable       from './UserTable';
 import UserDetail      from './UserDetail';
 import { toISO } from '../utils/dates';
@@ -103,6 +104,9 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Insights */}
+      {!loading && <InsightsPanel kpis={kpis} failData={failData} />}
 
       {/* User Activity */}
       <div className="mb-2">
