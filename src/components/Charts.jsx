@@ -28,6 +28,18 @@ function CleanTooltip({ active, payload, label }) {
   );
 }
 
+function EmptyState({ message }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-[220px] gap-2">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18M9 21V9" />
+      </svg>
+      <p className="text-sm text-gray-400">{message}</p>
+    </div>
+  );
+}
+
 function ChartCard({ title, subtitle, children }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5">
@@ -42,7 +54,7 @@ export function StatusChart({ data }) {
   return (
     <ChartCard title="Message Status" subtitle="Last 7 days delivery performance">
       {data.length === 0 ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No activity in this date range</p>
+        <EmptyState message="No activity in this date range" />
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>
@@ -73,15 +85,19 @@ export function StatusChart({ data }) {
 export function PipelineChart({ data }) {
   return (
     <ChartCard title="Users by Pipeline" subtitle="Lead segmentation overview">
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-          <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis type="category" dataKey="pipeline" tick={{ fontSize: 11 }} width={80} axisLine={false} tickLine={false} />
-          <Tooltip content={<CleanTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-          <Bar dataKey="count" fill="#64748b" radius={[0, 4, 4, 0]} barSize={16} />
-        </BarChart>
-      </ResponsiveContainer>
+      {data.length === 0 ? (
+        <EmptyState message="No pipeline data available" />
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+            <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="pipeline" tick={{ fontSize: 11 }} width={80} axisLine={false} tickLine={false} />
+            <Tooltip content={<CleanTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+            <Bar dataKey="count" fill="#64748b" radius={[0, 4, 4, 0]} barSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </ChartCard>
   );
 }
@@ -90,7 +106,7 @@ export function FailureChart({ data }) {
   return (
     <ChartCard title="Failure Reasons" subtitle="Message delivery issues">
       {data.length === 0 ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No failures in this date range</p>
+        <EmptyState message="No failures in this date range" />
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 0, bottom: 0 }}>
