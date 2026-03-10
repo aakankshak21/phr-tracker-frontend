@@ -6,7 +6,7 @@ export default function KpiCard({ label, value, accent, trend }) {
       <p className="text-3xl font-semibold text-gray-900 leading-none">{value ?? '—'}</p>
       {trend && (
         <p className={`text-xs font-medium flex items-center gap-0.5 ${trend.positive ? 'text-emerald-600' : 'text-red-500'}`}>
-          <span>{trend.positive ? '↑' : '↓'}</span>
+          <span>{trend.up ? '↑' : '↓'}</span>
           <span>{trend.label}</span>
           <span className="text-gray-400 font-normal ml-1">vs prev period</span>
         </p>
