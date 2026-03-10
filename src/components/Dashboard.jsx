@@ -50,12 +50,19 @@ export default function Dashboard() {
   }, [start, end]);
 
   const rangeLabel = getRangeLabel(start, end);
-  const kpiCards = kpis ? [
-    { label: 'Total Users',                        value: kpis.totalUsers,             accent: '#6366f1' },
-    { label: 'Scheduled Today',                    value: kpis.scheduledToday,         accent: '#0ea5e9' },
-    { label: `Success Rate (${rangeLabel})`,       value: `${kpis.successRate}%`,      accent: '#10b981' },
-    { label: `Failed Messages (${rangeLabel})`,    value: kpis.failedMessages,         accent: '#ef4444' },
-  ] : [];
+
+  const kpiCards = kpis ? (() => {
+    const srDelta  = (parseFloat(kpis.successRate) - parseFloat(kpis.prevSuccessRate)).toFixed(1);
+    const fmDelta  = kpis.failedMessages - kpis.prevFailedMessages;
+    return [
+      { label: 'Total Users',                     value: kpis.totalUsers,        accent: '#6366f1' },
+      { label: 'Scheduled Today',                 value: kpis.scheduledToday,    accent: '#0ea5e9' },
+      { label: `Success Rate (${rangeLabel})`,    value: `${kpis.successRate}%`, accent: '#10b981',
+        trend: { positive: parseFloat(srDelta) >= 0, label: `${srDelta > 0 ? '+' : ''}${srDelta}pp` } },
+      { label: `Failed Messages (${rangeLabel})`, value: kpis.failedMessages,    accent: '#ef4444',
+        trend: { positive: fmDelta <= 0, label: `${fmDelta > 0 ? '+' : ''}${fmDelta}` } },
+    ];
+  })() : [];
 
   return (
     <main className="flex-1 p-6 overflow-y-auto">
