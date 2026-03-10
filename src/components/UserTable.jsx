@@ -1,13 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Badge from './Badge';
 import { fmtDate } from '../utils/dates';
 
 const PAGE_SIZE = 50;
 
 function exportCSV(rows, startDate, endDate) {
-  const headers = ['Name', 'Phone', 'Pipeline', 'Last PHR Sent', 'PHR in 7D', 'Last Status', 'Failure Reason'];
+  const headers = ['Name', 'Phone', 'Email', 'Pipeline', 'Last PHR Sent', 'PHR in 7D', 'Last Status', 'Failure Reason'];
   const lines = rows.map(r => [
-    r.name, r.phone, r.pipeline,
+    r.name, r.phone, r.email, r.pipeline,
     r.last_phr_sent_date ?? '—',
     r.phr_in_last_7_days ? 'Yes' : 'No',
     r.last_status, r.failure_reason,
@@ -23,10 +23,16 @@ function exportCSV(rows, startDate, endDate) {
 }
 
 export default function UserTable({ data, startDate, endDate, onNameClick }) {
-  const [pipeline, setPipeline]   = useState('All');
-  const [status, setStatus]       = useState('All');
-  const [search, setSearch]       = useState('');
-  const [page, setPage]           = useState(1);
+  const [pipeline, setPipeline]     = useState('All');
+  const [status, setStatus]         = useState('All');
+  const [search, setSearch]         = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage]             = useState(1);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const pipelines = useMemo(() => ['All', ...new Set(data.map(r => r.pipeline))].sort(), [data]);
   const statuses  = useMemo(() => {
@@ -38,14 +44,16 @@ export default function UserTable({ data, startDate, endDate, onNameClick }) {
     let rows = data;
     if (pipeline !== 'All') rows = rows.filter(r => r.pipeline === pipeline);
     if (status !== 'All')   rows = rows.filter(r => r.last_status === status);
-    if (search.length >= 3) {
-      const q = search.toLowerCase();
+    if (debouncedSearch.length >= 3) {
+      const q = debouncedSearch.toLowerCase();
       rows = rows.filter(r =>
-        r.name.toLowerCase().includes(q) || r.phone.toLowerCase().includes(q)
+        r.name.toLowerCase().includes(q) ||
+        r.phone.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q)
       );
     }
     return rows;
-  }, [data, pipeline, status, search]);
+  }, [data, pipeline, status, debouncedSearch]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage   = Math.min(page, totalPages);
@@ -103,7 +111,7 @@ export default function UserTable({ data, startDate, endDate, onNameClick }) {
             type="text"
             value={search}
             onChange={handleSearch}
-            placeholder="Name or phone (min 3 chars)…"
+            placeholder="Name, phone or email (min 3 chars)…"
             className="text-sm border border-gray-200 rounded-md px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400"
           />
         </div>
@@ -126,7 +134,7 @@ export default function UserTable({ data, startDate, endDate, onNameClick }) {
         <table className="w-full text-sm min-w-[800px]">
           <thead className="sticky top-0 z-10">
             <tr className="bg-gray-50 border-b-2 border-gray-200">
-              {['Name','Phone','Pipeline','Last PHR Sent','PHR in 7D','Last Status','Failure Reason'].map(h => (
+              {['Name','Phone','Email','Pipeline','Last PHR Sent','PHR in 7D','Last Status','Failure Reason'].map(h => (
                 <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   {h}
                 </th>
@@ -148,6 +156,7 @@ export default function UserTable({ data, startDate, endDate, onNameClick }) {
                   </button>
                 </td>
                 <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{r.phone}</td>
+                <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{r.email}</td>
                 <td className="px-4 py-2.5 whitespace-nowrap">
                   <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">{r.pipeline}</span>
                 </td>
@@ -162,7 +171,7 @@ export default function UserTable({ data, startDate, endDate, onNameClick }) {
               </tr>
             ))}
             {pageRows.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm">No users match the current filters.</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400 text-sm">No users match the current filters.</td></tr>
             )}
           </tbody>
         </table>
