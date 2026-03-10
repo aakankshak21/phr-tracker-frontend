@@ -106,7 +106,7 @@ export default function Dashboard() {
       </div>
 
       {/* Insights */}
-      {!loading && <InsightsPanel kpis={kpis} failData={failData} />}
+      {!loading && <InsightsPanel kpis={kpis} statusData={statusData} failData={failData} />}
 
       {/* User Activity */}
       <div className="mb-2">

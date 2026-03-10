@@ -62,8 +62,21 @@ const META = {
   recommendation: { icon: '💡', label: 'Recommendation', color: 'text-gray-700' },
 };
 
-export default function InsightsPanel({ kpis, failData }) {
+export default function InsightsPanel({ kpis, statusData, failData }) {
   if (!kpis) return null;
+
+  const hasActivity = statusData?.length > 0;
+
+  if (!hasActivity) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-5">
+        <p className="text-sm font-semibold text-gray-900 mb-0.5">Insights & Recommendations</p>
+        <p className="text-xs text-gray-400 mb-4">Auto-generated from current period data</p>
+        <p className="text-xs text-gray-400 italic">No delivery activity in the selected period. Insights will appear once messages are sent.</p>
+      </div>
+    );
+  }
+
   const insights = generateInsights({ kpis, failData });
 
   return (
