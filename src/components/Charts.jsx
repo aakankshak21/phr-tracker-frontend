@@ -79,7 +79,7 @@ export function PipelineChart({ data }) {
           <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="pipeline" tick={{ fontSize: 11 }} width={80} axisLine={false} tickLine={false} />
           <Tooltip content={<CleanTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-          <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={16} />
+          <Bar dataKey="count" fill="#64748b" radius={[0, 4, 4, 0]} barSize={16} />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
